@@ -3,14 +3,14 @@ _default:
     @just help
 
 # === Service Configuration ===
-SERVICE_NAME := "court_service"
-PORT := "8005"
+SERVICE_NAME := "db_gateway_service"
+PORT := "8007"
 
 # Show help information
 help:
     @clear
     @echo ""
-    @printf "\033[0;34m=== Court Service (port 8005) ===\033[0m\n"
+    @printf "\033[0;34m=== Database Gateway Service (port 8007) ===\033[0m\n"
     @echo ""
     @printf "\033[1;33mSetup\033[0m\n"
     @printf "  \033[0;37mjust check            \033[0;34m Check if all required tools are installed\033[0m\n"
@@ -122,30 +122,30 @@ destroy:
 # Run the service locally (no Docker) with hot reload
 run:
     @echo ""
-    @printf "\033[0;34m=== Running Court Service Locally on port 8005 ===\033[0m\n"
-    @uv run uvicorn court_service.app:create_app --factory --reload --host 127.0.0.1 --port 8005
+    @printf "\033[0;34m=== Running Database Gateway Service Locally on port 8007 ===\033[0m\n"
+    @uv run uvicorn db_gateway_service.app:create_app --factory --reload --host 127.0.0.1 --port 8007
 
 # Stop the locally running service
 kill:
     #!/usr/bin/env bash
     printf "\n"
-    printf "\033[0;34m=== Stopping Court Service (Local) ===\033[0m\n"
+    printf "\033[0;34m=== Stopping Database Gateway Service (Local) ===\033[0m\n"
     printf "\n"
 
-    pid=$(lsof -ti :8005 -sTCP:LISTEN 2>/dev/null)
+    pid=$(lsof -ti :8007 -sTCP:LISTEN 2>/dev/null)
 
     if [ -n "$pid" ]; then
         printf "Service is running (PID: %s). Stopping...\n" "$pid"
         kill $pid 2>/dev/null
         sleep 1
 
-        if lsof -ti :8005 -sTCP:LISTEN > /dev/null 2>&1; then
+        if lsof -ti :8007 -sTCP:LISTEN > /dev/null 2>&1; then
             printf "\033[0;31m✗ Service still running. Forcing kill...\033[0m\n"
-            kill -9 $(lsof -ti :8005 -sTCP:LISTEN) 2>/dev/null
+            kill -9 $(lsof -ti :8007 -sTCP:LISTEN) 2>/dev/null
             sleep 1
         fi
 
-        if lsof -ti :8005 -sTCP:LISTEN > /dev/null 2>&1; then
+        if lsof -ti :8007 -sTCP:LISTEN > /dev/null 2>&1; then
             printf "\033[0;31m✗ Failed to stop service\033[0m\n"
             exit 1
         else
@@ -161,36 +161,36 @@ kill:
 # Run service in Docker (production mode, detached)
 docker-up:
     @echo ""
-    @printf "\033[0;34m=== Starting Court Service in Docker ===\033[0m\n"
-    @cd ../.. && docker compose up -d court
+    @printf "\033[0;34m=== Starting Database Gateway Service in Docker ===\033[0m\n"
+    @cd ../.. && docker compose up -d db-gateway
     @echo ""
-    @printf "\033[0;32m✓ Service running at http://localhost:8005\033[0m\n"
+    @printf "\033[0;32m✓ Service running at http://localhost:8007\033[0m\n"
     @echo "  View logs: just docker-logs"
     @echo ""
 
 # Run service in Docker (development mode with hot reload)
 docker-up-dev:
     @echo ""
-    @printf "\033[0;34m=== Starting Court Service in Docker (Dev Mode) ===\033[0m\n"
-    @cd ../.. && docker compose -f docker-compose.yml -f docker-compose.dev.yml up court
+    @printf "\033[0;34m=== Starting Database Gateway Service in Docker (Dev Mode) ===\033[0m\n"
+    @cd ../.. && docker compose -f docker-compose.yml -f docker-compose.dev.yml up db-gateway
 
 # Stop service in Docker
 docker-down:
     @echo ""
-    @printf "\033[0;34m=== Stopping Court Service ===\033[0m\n"
-    @cd ../.. && docker compose stop court
+    @printf "\033[0;34m=== Stopping Database Gateway Service ===\033[0m\n"
+    @cd ../.. && docker compose stop db-gateway
     @printf "\033[0;32m✓ Service stopped\033[0m\n"
     @echo ""
 
 # View Docker logs for this service
 docker-logs:
-    @cd ../.. && docker compose logs -f court
+    @cd ../.. && docker compose logs -f db-gateway
 
 # Build Docker image for this service
 docker-build:
     @echo ""
-    @printf "\033[0;34m=== Building Court Docker Image ===\033[0m\n"
-    @cd ../.. && docker compose build court
+    @printf "\033[0;34m=== Building Database Gateway Docker Image ===\033[0m\n"
+    @cd ../.. && docker compose build db-gateway
     @printf "\033[0;32m✓ Image built\033[0m\n"
     @echo ""
 
@@ -198,20 +198,20 @@ docker-build:
 status:
     #!/usr/bin/env bash
     printf "\n"
-    printf "\033[0;34m=== Court Service Status ===\033[0m\n"
+    printf "\033[0;34m=== Database Gateway Service Status ===\033[0m\n"
     printf "\n"
-    if health_response=$(curl -s --connect-timeout 2 "http://localhost:8005/health" 2>/dev/null); then
+    if health_response=$(curl -s --connect-timeout 2 "http://localhost:8007/health" 2>/dev/null); then
         status=$(echo "$health_response" | jq -r '.status // empty' 2>/dev/null)
         if [ "$status" = "ok" ]; then
             uptime=$(echo "$health_response" | jq -r '.uptime_seconds // empty' 2>/dev/null)
-            printf "\033[0;32m✓ Court\033[0m (port 8005) - ok"
+            printf "\033[0;32m✓ Database Gateway\033[0m (port 8007) - ok"
             [ -n "$uptime" ] && printf " (uptime: %ss)" "$uptime"
             printf "\n"
         else
-            printf "\033[0;33m⚠ Court\033[0m (port 8005) - %s\n" "${status:-unknown}"
+            printf "\033[0;33m⚠ Database Gateway\033[0m (port 8007) - %s\n" "${status:-unknown}"
         fi
     else
-        printf "\033[0;31m✗ Court\033[0m (port 8005) - not responding\n"
+        printf "\033[0;31m✗ Database Gateway\033[0m (port 8007) - not responding\n"
     fi
     printf "\n"
 
@@ -373,7 +373,7 @@ ci:
     #!/usr/bin/env bash
     set -e
     printf "\n"
-    printf "\033[0;34m=== Running CI Checks for Court Service ===\033[0m\n"
+    printf "\033[0;34m=== Running CI Checks for Database Gateway Service ===\033[0m\n"
     printf "\n"
     just init
     just code-format
